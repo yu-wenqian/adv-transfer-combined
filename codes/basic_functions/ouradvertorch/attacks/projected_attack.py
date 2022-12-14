@@ -65,6 +65,8 @@ def input_diversity(input_tensor,image_width,image_resize,prob):
         # 要看一下padded的维度来验证  left, top, right and bottom
         padded = transforms.Pad([pad_left, pad_top,pad_right, pad_bottom])(rescaled)
 
+        padded = transforms.Resize([image_width, image_width], interpolation=Image.NEAREST)(padded)
+
         # padded.set_shape((input_tensor.shape[0], image_resize, image_resize, 3))
         rnd_prob = randint(0,100)/100.0
         if rnd_prob < prob:

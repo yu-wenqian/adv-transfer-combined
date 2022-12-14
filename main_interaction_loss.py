@@ -15,7 +15,7 @@ parser.add_argument(
     "--adv_image_root", type=str, default='./experiments/adv_images')
 parser.add_argument("--clean_image_root", type=str, default='data/images_1000')
 parser.add_argument("--gpu", type=int, default=0)
-parser.add_argument("--src_model", type=str, default='resnet50')
+parser.add_argument("--src_model", type=str, default='densenet201')
 parser.add_argument("--src_kind", type=str, default='cnn')
 parser.add_argument(
     "--tar_model", type=str, default=['vit'], nargs='*')
@@ -35,7 +35,7 @@ parser.add_argument("--sample_grid_num", type=int, default=32)
 parser.add_argument("--sample_times", type=int, default=32)
 parser.add_argument("--image_size", type=int, default=224)
 parser.add_argument("--image_resize", type=int, default=255)
-parser.add_argument("--prob", type=float, default=0.4)
+parser.add_argument("--prob", type=float, default=1.0)
 parser.add_argument('--linbp_layer', type=str, default='3_1')
 parser.add_argument('--ila_layer', type=str, default='2_3')
 parser.add_argument('--ila_niters', type=int, default=100)
@@ -60,8 +60,11 @@ args = parser.parse_args()
 #     "inceptionv4", "inceptionresnetv2"
 # ]
 tar_model_list = [
-    # "vit_base_patch16_224",
-    "vgg16",
+    # "vit_base_patch16_224", "vit_small_patch16_224", "vit_large_patch16_224",
+    # "deit_base_patch16_224", "deit_tiny_patch16_224", "deit_small_patch16_224",
+    # "swin_base_patch4_window7_224", "swin_large_patch4_window7_224", "swin_small_patch4_window7_224", "swin_tiny_patch4_window7_224"
+    # "vgg16",
+    "densenet201", "senet154", "inceptionv3", "inceptionv4", "inceptionresnetv2"
 ]
 
 def ttest_interaction_reduced_attack():
@@ -69,8 +72,9 @@ def ttest_interaction_reduced_attack():
     interaction_reduced_attack.generate_adv_images(args)
     for tar_model in tar_model_list:
         args.tar_model = tar_model
-        interaction_reduced_attack.save_scores(args)
-        leave_one_out.evaluate(args)
+        interaction_reduced_attack.simple_eval(args)
+        # interaction_reduced_attack.save_scores(args)
+        # leave_one_out.evaluate(args)
     # args.tar_model = 'vit'
     # interaction_reduced_attack.save_scores(args)
     # leave_one_out.evaluate(args)

@@ -13,6 +13,7 @@ def load_imagenet_model(model_type):
             num_classes=1000, pretrained='imagenet').eval()
         for param in model.parameters():
             param.requires_grad = False
+    # model.eval()
     return model
 
 def load_vit_model(args):

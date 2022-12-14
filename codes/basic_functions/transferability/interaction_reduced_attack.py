@@ -25,10 +25,10 @@ def generate_adv_images(args):
         model = load_imagenet_model(model_type=args.src_model)
         mean, std = model.mean, model.std
         height, width = model.input_size[1], model.input_size[2]
-    elif 'vit' in args.src_kind:
-        model, mean, std = load_vit_model(args)
-        height = args.image_size
-        width = args.image_size
+    # elif 'vit' in args.src_kind:
+    #     model, mean, std = load_vit_model(args)
+    #     height = args.image_size
+    #     width = args.image_size
 
     # height, width = model.input_size[1], model.input_size[2]
     # mean, std = model.mean, model.std
@@ -109,11 +109,26 @@ def score_function(model, image, label, mode='untarget'):
     else:
         raise NotImplementedError('only implement untarget setting')
 
+def simple_score_function(model, image, label, mode='untarget'):
+    if mode == 'untarget':
+        with torch.no_grad():
+            acc = 0.0
+            logits = model(image)
+            image_num = len(label)
+            for i in range(image_num):
+                pred_i = logits[i:i + 1].max(1)[1].item()
+                label_i = label[i].item()
+                if pred_i == label_i:
+                    acc += 1.0
+            return acc, image_num
+    else:
+        raise NotImplementedError('only implement untarget setting')
+
 
 def save_scores(args):
 
     if 'cnn' in args.tar_kind:
-        model = load_imagenet_model(model_type=args.src_model)
+        model = load_imagenet_model(model_type=args.tar_model)
         mean, std = model.mean, model.std
         height, width = model.input_size[1], model.input_size[2]
     elif 'vit' in args.tar_kind:
@@ -148,3 +163,36 @@ def save_scores(args):
     np.save(os.path.join(args.loss_root, adv_save_name), adv_scores_dict)
 
     print(f'{args.tar_model} score saved')
+
+def simple_eval(args):
+    if 'cnn' in args.tar_kind:
+        model = load_imagenet_model(model_type=args.tar_model)
+        mean, std = model.mean, model.std
+        height, width = model.input_size[1], model.input_size[2]
+        print(f'{args.tar_model} success loaded')
+    elif 'vit' in args.tar_kind:
+        model, mean, std = load_vit_model(args)
+        height = args.image_size
+        width = args.image_size
+
+    # height, width = model.input_size[1], model.input_size[2]
+    # mean, std = model.mean, model.std
+    model = nn.Sequential(Normalize(mean=mean, std=std), model).to(args.device)
+    epoch = args.num_steps-1
+    # adv_dir = os.path.join(args.adv_image_root, f'epoch_{epoch}')
+    adv_dir = args.clean_image_root
+    adv_dataloader, _ = load_images(
+        input_dir=adv_dir,
+        input_height=height,
+        input_width=width,
+        batch_size=128)
+    success_rate = 0.0
+    image_sum = 0
+    for (adv_images, labels, file_names) in adv_dataloader:
+        adv_images = adv_images.to(args.device)
+        success_num,image_num = simple_score_function(model, adv_images, labels)
+        success_rate += success_num
+        image_sum += image_num
+    sucess_rate = success_rate/image_sum
+    print(f'{args.tar_model} success rate: {sucess_rate}')
+
